@@ -4,22 +4,28 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		log.Print("New request....")
-		fmt.Fprintf(w, "Welcome to my website GoLang!")
+	router := mux.NewRouter()
+
+	router.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(rw, "Welcome to Golang home page...")
 	})
 
-	fs := http.FileServer(http.Dir("static/"))
-	http.Handle("/static/", http.StripPrefix("/static/", fs))
+	router.HandleFunc("/books/{title}/page/{page}", func(rw http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		title := vars["title"]
+		page := vars["page"]
+
+		fmt.Fprintf(rw, "You've requested the book: %s on page %s\n", title, page)
+	})
 
 	fmt.Printf("Starting server at port 8085\n")
 
-	if err := http.ListenAndServe(":8085", nil); err != nil {
+	if err := http.ListenAndServe(":8085", router); err != nil {
 		log.Fatal(err)
-	} else {
-		log.Print("Started....")
 	}
 }
