@@ -5,22 +5,43 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 )
 
 type Env struct {
-	dbHost, dbUser, dbPass, dbName string
+	dbHost, dbPort, dbUser, dbPass, dbName string
 }
 
 func main() {
+
+	dbHost := os.Getenv("DB_HOST")
+	if dbHost == "" {
+		dbHost = "localhost:3306"
+	}
+
+	dbPort := os.Getenv("DB_PORT")
+	if dbPort == "" {
+		dbPort = "3306"
+	}
+
+	dbUser := os.Getenv("DB_USER")
+	dbPass := os.Getenv("DB_PASS")
+	dbName := os.Getenv("DB_NAME")
+
+	if dbUser == "" || dbPass == "" || dbName == "" {
+		log.Fatal("DB user name, password & db name env variable are not set properly !!!")
+	}
+
 	router := mux.NewRouter()
 	dbCon := Env{
-		dbHost: "192.168.0.100",
-		dbUser: "db_user",
-		dbPass: "Proj123",
-		dbName: "go_web_api",
+		dbHost: dbHost,
+		dbPort: dbPort,
+		dbUser: dbUser,
+		dbPass: dbPass,
+		dbName: dbName,
 	}
 	router.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
 		dbCon.connectDb()
@@ -43,9 +64,12 @@ func main() {
 }
 
 func (env Env) connectDb() {
-	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@(%s:3306)/%s?parseTime=true", env.dbUser, env.dbPass, env.dbHost, env.dbName))
+	fmt.Print(env)
+	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@(%s:%s)/%s?parseTime=true", env.dbUser, env.dbPass, env.dbHost, env.dbPort, env.dbName))
 
-	if db == nil && err != nil {
-		fmt.Printf(" Connection error ")
+	err = db.Ping()
+
+	if err != nil {
+		fmt.Println(" Connection error ")
 	}
 }
